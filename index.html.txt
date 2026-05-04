@@ -1,0 +1,160 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+  <title>Pro Digit Analyzer</title>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      background: #0d0d0d;
+      color: white;
+    }
+    .digits {
+      font-size: 26px;
+      margin: 20px;
+    }
+    .even { color: lime; }
+    .odd { color: red; }
+    .box {
+      margin-top: 10px;
+      font-size: 18px;
+    }
+    .signal {
+      margin-top: 20px;
+      font-size: 24px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+
+<body>
+
+
+<h1>🔥 Pro Digit Analyzer</h1>
+
+
+<div class="digits" id="digits"></div>
+
+
+<div class="box">
+  EVEN: <span id="even">0</span> |
+  ODD: <span id="odd">0</span>
+</div>
+
+
+<div class="box">
+  OVER (5-9): <span id="over">0</span> |
+  UNDER (0-4): <span id="under">0</span>
+</div>
+
+
+<div class="box">
+  STREAK: <span id="streak">0</span>
+</div>
+
+
+<div class="signal" id="signal">Waiting...</div>
+
+
+<audio id="alertSound" src="https://www.soundjay.com/buttons/beep-01a.mp3"></audio>
+
+
+<script>
+let digitsArr = [];
+let lastType = "";
+let streak = 0;
+
+
+let ws = new WebSocket("wss://ws.derivws.com/websockets/v3");
+
+
+ws.onopen = () => {
+  ws.send(JSON.stringify({ ticks: "R_100" }));
+};
+
+
+ws.onmessage = (msg) => {
+  let data = JSON.parse(msg.data);
+
+
+  if (data.tick) {
+    let price = data.tick.quote.toString();
+    let digit = parseInt(price[price.length - 1]);
+
+
+    let type = digit % 2 === 0 ? "even" : "odd";
+    let overUnder = digit >= 5 ? "over" : "under";
+
+
+    // Streak logic
+    if (type === lastType) {
+      streak++;
+    } else {
+      streak = 1;
+      lastType = type;
+    }
+
+
+    // Save last 25 digits
+    digitsArr.unshift({ digit, type, overUnder });
+    if (digitsArr.length > 25) digitsArr.pop();
+
+
+    // Counts
+    let even = digitsArr.filter(d => d.type === "even").length;
+    let odd = digitsArr.filter(d => d.type === "odd").length;
+    let over = digitsArr.filter(d => d.overUnder === "over").length;
+    let under = digitsArr.filter(d => d.overUnder === "under").length;
+
+
+    // Display digits
+    let display = "";
+    digitsArr.forEach(d => {
+      display += `<span class="${d.type}">${d.digit}</span> `;
+    });
+
+
+    document.getElementById("digits").innerHTML = display;
+
+
+    document.getElementById("even").textContent = even;
+    document.getElementById("odd").textContent = odd;
+    document.getElementById("over").textContent = over;
+    document.getElementById("under").textContent = under;
+    document.getElementById("streak").textContent = streak;
+
+
+    // PRO SIGNAL LOGIC
+    let signal = "WAIT";
+
+
+    if (streak >= 6) {
+      signal = "⚠️ PREPARE REVERSAL";
+      document.getElementById("alertSound").play();
+    }
+
+
+    if (streak >= 7) {
+      signal = "🔥 STRONG REVERSAL ZONE";
+    }
+
+
+    if (even >= 18) {
+      signal = "⚠️ TOO MANY EVEN";
+    }
+
+
+    if (odd >= 18) {
+      signal = "⚠️ TOO MANY ODD";
+    }
+
+
+    document.getElementById("signal").textContent = signal;
+  }
+};
+</script>
+
+
+</body>
+</html>
