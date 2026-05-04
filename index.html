@@ -1,7 +1,7 @@
 ﻿<!DOCTYPE html>
 <html>
 <head>
-  <title>Pro Digit Analyzer</title>
+  <title>Pro Digit Analyzer</title><button onclick="resetStats()">Reset</button><
   <style>
     body {
       font-family: Arial;
@@ -31,7 +31,14 @@
 <body>
 
 
-<h1>🔥 Pro Digit Analyzer</h1>
+<h1>🔥 Pro Digit Analyzer</h1><select id="market">
+  <option value="R_100">R_100</option>
+  <option value="R_50">R_50</option>
+  <option value="R_25">R_25</option>
+  <option value="R_10">R_10</option>
+</select>
+
+<button onclick="changeMarket()">Change Market</button>
 
 
 <div class="digits" id="digits"></div>
@@ -60,7 +67,20 @@
 <audio id="alertSound" src="https://www.soundjay.com/buttons/beep-01a.mp3"></audio>
 
 
-<script>
+<script>function resetStats() {
+  digitsArr = [];
+  streak = 0;
+  document.getElementById("digits").innerHTML = "";
+}function changeMarket() {
+  let market = document.getElementById("market").value;
+  ws.close();
+
+  ws = new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=1089");
+
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ ticks: market }));
+  };
+}
 let digitsArr = [];
 let lastType = "";
 let streak = 0;
